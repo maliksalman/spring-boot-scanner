@@ -12,11 +12,14 @@ jobs:
       - id: download-dependencies
         run: |
           go mod download
-      - id: make-binaries
+      - id: build
         run: |
-          GOOS=linux GOARCH=amd64 go build -o "spring-boot-scanner-linux-amd64"
-          GOOS=linux GOARCH=arm64 go build -o "spring-boot-scanner-linux-arm64"
-          GOOS=darwin GOARCH=amd64 go build -o "spring-boot-scanner-darwin-amd64"
-          GOOS=darwin GOARCH=arm64 go build -o "spring-boot-scanner-darwin-arm64"
-          GOOS=windows GOARCH=amd64 go build -o "spring-boot-scanner-windows-amd64.exe"
+          ./build.sh
           ls -al
+
+  publish:
+    runs-on: [self-hosted, Linux, ARM64]
+    needs: [build]
+    steps:
+      - id: debug
+        run: ls -al

@@ -1,18 +1,25 @@
 package main
 
 import (
+	"code.cloudfoundry.org/cli/actor/v7action"
 	"code.cloudfoundry.org/cli/cf/commandregistry"
 	"code.cloudfoundry.org/cli/cf/models"
 	"code.cloudfoundry.org/cli/cf/trace"
+	"code.cloudfoundry.org/cli/command/v7/shared"
+	"code.cloudfoundry.org/cli/util/configv3"
+	"code.cloudfoundry.org/cli/util/ui"
+	"code.cloudfoundry.org/clock"
 	"log"
 	"os"
 )
 
 func main() {
-	printOrgsAndSpaces()
-}
 
-func printOrgsAndSpaces() {
+	// actor setup
+	cfConfig, _ := configv3.GetCFConfig()
+	commandUI, _ := ui.NewUI(cfConfig)
+	ccClient, uaaClient, routingClient, _ := shared.GetNewClientsAndConnectToCF(cfConfig, commandUI, "")
+	actor := v7action.NewActor(ccClient, cfConfig, nil, uaaClient, routingClient, clock.NewClock())
 
 	// do some setup
 	traceLogger := trace.NewLogger(os.Stdout, false, "", "")
@@ -22,7 +29,8 @@ func printOrgsAndSpaces() {
 	// get access to all the repos we need
 	orgsRepo := deps.RepoLocator.GetOrganizationRepository()
 	spacesRepo := deps.RepoLocator.GetSpaceRepository()
-	appsRepo := deps.RepoLocator.GetAppSummaryRepository()
+	appsSummaryRepo := deps.RepoLocator.GetAppSummaryRepository()
+	appsRepo := deps.RepoLocator.GetApplicationRepository()
 
 	// find all orgs
 	orgs, _ := orgsRepo.ListOrgs(100)
@@ -33,16 +41,46 @@ func printOrgsAndSpaces() {
 
 		// iterate over all spaces in current org
 		spacesRepo.ListSpacesFromOrg(org.GUID, func(space models.Space) bool {
-			log.Printf("Org: %s, Space: %s", org.Name, space.Name)
+			log.Printf("Found: Org=%s, Space=%s", org.Name, space.Name)
 
 			// set the current space as target
 			deps.Config.SetSpaceFields(space.SpaceFields)
 
 			// find app-summaries in the current org/space
-			apps, _ := appsRepo.GetSummariesInCurrentSpace()
+			apps, _ := appsSummaryRepo.GetSummariesInCurrentSpace()
 			for _, app := range apps {
-				// print app info
-				log.Printf("*** App: Name=%s, BuildPack=%s, Instances=%d, State=%s", app.Name, app.DetectedBuildpack, app.RunningInstances, app.State)
+
+				// get more info about the app - like build-pack
+				appObj, _ := appsRepo.GetApp(app.GUID)
+
+				if appObj.DetectedBuildpack == "java" {
+					dropletBytes, _, _, _ := actor.DownloadCurrentDropletByAppName(app.Name, space.GUID)
+					//dropletBytes, _ := os.ReadFile("test-droplet.tgz")
+
+					javaRuntimeVersion, bootVersion := findJavaRuntimeAndBootVersions(dropletBytes)
+					javaCompilerVersion := findJavaCompilerVersion(dropletBytes)
+
+					// print app info
+					log.Printf(
+						"*** App: Name=%s, BuildPack=%s, Instances=%d, State=%s, JavaRuntime=%s, Boot=%s, JavaCompiler=%s",
+						app.Name,
+						appObj.DetectedBuildpack,
+						app.RunningInstances,
+						app.State,
+						javaRuntimeVersion,
+						bootVersion,
+						javaCompilerVersion,
+					)
+				} else {
+					// print app info
+					log.Printf(
+						"*** App: Name=%s, BuildPack=%s, Instances=%d, State=%s",
+						app.Name,
+						appObj.DetectedBuildpack,
+						app.RunningInstances,
+						app.State,
+					)
+				}
 			}
 			return true
 		})

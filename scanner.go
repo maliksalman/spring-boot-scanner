@@ -19,7 +19,7 @@ func main() {
 	cfConfig, _ := configv3.GetCFConfig()
 	commandUI, _ := ui.NewUI(cfConfig)
 	ccClient, uaaClient, routingClient, _ := shared.GetNewClientsAndConnectToCF(cfConfig, commandUI, "")
-	actor := v7action.NewActor(ccClient, cfConfig, nil, uaaClient, routingClient, clock.NewClock())
+	v7action.NewActor(ccClient, cfConfig, nil, uaaClient, routingClient, clock.NewClock())
 
 	// do some setup
 	traceLogger := trace.NewLogger(os.Stdout, false, "", "")
@@ -31,6 +31,8 @@ func main() {
 	spacesRepo := deps.RepoLocator.GetSpaceRepository()
 	appsSummaryRepo := deps.RepoLocator.GetAppSummaryRepository()
 	appsRepo := deps.RepoLocator.GetApplicationRepository()
+
+	scannerOutput := NewScannerOutput("output.json")
 
 	// find all orgs
 	orgs, _ := orgsRepo.ListOrgs(100)
@@ -54,35 +56,35 @@ func main() {
 				appObj, _ := appsRepo.GetApp(app.GUID)
 
 				if appObj.DetectedBuildpack == "java" {
-					dropletBytes, _, _, _ := actor.DownloadCurrentDropletByAppName(app.Name, space.GUID)
-					//dropletBytes, _ := os.ReadFile("test-droplet.tgz")
+					//dropletBytes, _, _, _ := actor.DownloadCurrentDropletByAppName(app.Name, space.GUID)
+					dropletBytes, _ := os.ReadFile("test-droplet.tgz")
 
 					javaRuntimeVersion, bootVersion := findJavaRuntimeAndBootVersions(dropletBytes)
 					javaCompilerVersion := findJavaCompilerVersion(dropletBytes)
 
 					// print app info
+					scannerOutput.AddJavaApp(org.Name, space.Name, app.Name, app.RunningInstances, appObj.State, javaRuntimeVersion, javaCompilerVersion, bootVersion)
 					log.Printf(
-						"*** App: Name=%s, BuildPack=%s, Instances=%d, State=%s, JavaRuntime=%s, Boot=%s, JavaCompiler=%s",
+						"*** App: Name=%s, BuildPack=%s, SpringBoot=%s, JavaCompiler=%s, JavaRuntime=%s",
 						app.Name,
 						appObj.DetectedBuildpack,
-						app.RunningInstances,
-						app.State,
-						javaRuntimeVersion,
 						bootVersion,
 						javaCompilerVersion,
+						javaRuntimeVersion,
 					)
 				} else {
 					// print app info
+					scannerOutput.AddOtherApp(org.Name, space.Name, app.Name, app.RunningInstances, appObj.State, appObj.DetectedBuildpack)
 					log.Printf(
-						"*** App: Name=%s, BuildPack=%s, Instances=%d, State=%s",
+						"*** App: Name=%s, BuildPack=%s",
 						app.Name,
 						appObj.DetectedBuildpack,
-						app.RunningInstances,
-						app.State,
 					)
 				}
 			}
 			return true
 		})
 	}
+
+	scannerOutput.writeAsJSON()
 }

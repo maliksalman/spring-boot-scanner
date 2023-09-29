@@ -1,8 +1,6 @@
-module droplet-scanner
+module spring-boot-scanner
 
 go 1.21.0
-
-toolchain go1.21.1
 
 require (
 	code.cloudfoundry.org/cli v0.0.0-20230926202446-8ef84cb3a8fe

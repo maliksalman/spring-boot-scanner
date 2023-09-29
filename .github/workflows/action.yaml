@@ -1,0 +1,22 @@
+name: Publish Release
+on:
+  workflow_dispatch:
+
+jobs:
+
+  build:
+    runs-on: [self-hosted, Linux, ARM64]
+    steps:
+      - id: checkout
+        uses: actions/checkout@v3
+      - id: download-dependencies
+        run: |
+          go mod download
+      - id: make-binaries
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o "spring-boot-scanner-${GOOS}-${GOARCH}"
+          GOOS=linux GOARCH=arm64 go build -o "spring-boot-scanner-${GOOS}-${GOARCH}"
+          GOOS=darwin GOARCH=amd64 go build -o "spring-boot-scanner-${GOOS}-${GOARCH}"
+          GOOS=darwin GOARCH=arm64 go build -o "spring-boot-scanner-${GOOS}-${GOARCH}"
+          GOOS=windows GOARCH=amd64 go build -o "spring-boot-scanner-${GOOS}-${GOARCH}.exe"
+          ls -al

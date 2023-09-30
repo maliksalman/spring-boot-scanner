@@ -1,4 +1,4 @@
-package main
+package cf
 
 import (
 	"archive/tar"

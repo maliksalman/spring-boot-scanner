@@ -1,4 +1,4 @@
-package main
+package cf
 
 import (
 	"encoding/json"
@@ -27,12 +27,11 @@ type OtherApp struct {
 }
 
 type ScannerOutput struct {
-	apps     []any
-	filename string
+	apps []any
 }
 
-func NewScannerOutput(filename string) *ScannerOutput {
-	return &ScannerOutput{apps: make([]any, 0), filename: filename}
+func NewScannerOutput() *ScannerOutput {
+	return &ScannerOutput{apps: make([]any, 0)}
 }
 
 func (o *ScannerOutput) AddJavaApp(org string, space string, name string, instances int, state string, runtimeVersion string, compilerVersion string, springBootVersion string) {
@@ -60,7 +59,7 @@ func (o *ScannerOutput) AddOtherApp(org string, space string, name string, insta
 	})
 }
 
-func (o *ScannerOutput) writeAsJSON() {
+func (o *ScannerOutput) WriteAsJSON(filename string) {
 	jsonBytes, _ := json.Marshal(o.apps)
-	os.WriteFile(o.filename, jsonBytes, 0644)
+	os.WriteFile(filename, jsonBytes, 0644)
 }

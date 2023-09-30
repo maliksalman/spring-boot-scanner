@@ -1,4 +1,4 @@
-module spring-boot-scanner
+module github.com/maliksalman/spring-boot-scanner
 
 go 1.21.0
 

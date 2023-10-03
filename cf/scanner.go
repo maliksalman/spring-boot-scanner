@@ -1,12 +1,14 @@
 package cf
 
 import (
+	"code.cloudfoundry.org/cli/actor/v7action"
 	"code.cloudfoundry.org/cli/cf/commandregistry"
 	"code.cloudfoundry.org/cli/cf/models"
 	"code.cloudfoundry.org/cli/cf/trace"
 	"code.cloudfoundry.org/cli/command/v7/shared"
 	"code.cloudfoundry.org/cli/util/configv3"
 	"code.cloudfoundry.org/cli/util/ui"
+	"code.cloudfoundry.org/clock"
 	"log"
 	"os"
 )
@@ -82,8 +84,8 @@ func ScanAppContents(apps []CFApp) *ScannerOutput {
 	commandUI, _ := ui.NewUI(cfConfig)
 	ccClient, uaaClient, routingClient, _ := shared.GetNewClientsAndConnectToCF(cfConfig, commandUI, "")
 
-	//actor := v7action.NewActor(ccClient, cfConfig, nil, uaaClient, routingClient, clock.NewClock())
-	actor := NewTestActor(ccClient, uaaClient, routingClient)
+	actor := v7action.NewActor(ccClient, cfConfig, nil, uaaClient, routingClient, clock.NewClock())
+	//actor := NewTestActor(ccClient, uaaClient, routingClient)
 
 	// create the object we want to return
 	scannerOutput := NewScannerOutput()

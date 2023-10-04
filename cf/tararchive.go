@@ -30,7 +30,7 @@ func findJavaCompilerVersion(dropletBytes []byte) string {
 			break
 		}
 
-		if hdr.Typeflag == tar.TypeReg && hdr.Size >= 8 && strings.HasPrefix(hdr.Name, "./app/BOOT-INF/classes/") && strings.HasSuffix(hdr.Name, ".class") {
+		if hdr.Typeflag == tar.TypeReg && hdr.Size >= 8 && (strings.HasPrefix(hdr.Name, "./app/BOOT-INF/classes/") || strings.HasPrefix(hdr.Name, "./app/WEB-INF/classes/")) && strings.HasSuffix(hdr.Name, ".class") {
 			header := make([]byte, 8)
 			tarReader.Read(header)
 			foundVersion := int(header[7])

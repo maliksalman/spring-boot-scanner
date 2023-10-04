@@ -3,7 +3,7 @@ package cf
 import (
 	"encoding/json"
 	"github.com/anchore/clio"
-	"github.com/anchore/syft/cmd/syft/cli"
+	"github.com/anchore/syft/cmd/syft/cli/commands"
 	"log"
 	"os"
 )
@@ -14,29 +14,31 @@ func findJavaRuntimeAndBootVersions(dropletBytes []byte) (string, string) {
 	os.WriteFile(dropletFile.Name(), dropletBytes, 0644)
 	log.Printf("Wrote droplet: %s", dropletFile.Name())
 
-	syftId := clio.Identification{
+	id := clio.Identification{
 		Name:           "spring-boot-scanner",
 		Version:        "v1.0.0",
 		BuildDate:      "some-date",
 		GitCommit:      "some-commit",
 		GitDescription: "some-git",
 	}
+	cfg := clio.NewSetupConfig(id).
+		WithGlobalConfigFlag().
+		WithNoLogging()
+	app := clio.New(*cfg)
+	command := commands.Packages(app)
 
-	syftFile, _ := os.CreateTemp("", "syft-*.json")
-
-	command := cli.Command(syftId)
+	outputFile, _ := os.CreateTemp("", "syft-*.json")
 	command.SetArgs([]string{
-		"packages",
 		dropletFile.Name(),
 		"--output",
 		"syft-json",
 		"--file",
-		syftFile.Name(),
+		outputFile.Name(),
 	})
 	command.Execute()
 
-	log.Printf("Analyzed droplet: File=%s\n", syftFile.Name())
-	return findJavaRuntimeAndBootVersionsFromSyftJson(syftFile.Name())
+	log.Printf("Analyzed droplet: File=%s\n", outputFile.Name())
+	return findJavaRuntimeAndBootVersionsFromSyftJson(outputFile.Name())
 }
 
 type SyftOutput struct {

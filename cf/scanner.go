@@ -9,6 +9,7 @@ import (
 	"code.cloudfoundry.org/cli/util/configv3"
 	"code.cloudfoundry.org/cli/util/ui"
 	"code.cloudfoundry.org/clock"
+	"github.com/maliksalman/spring-boot-scanner/scan"
 	"log"
 	"os"
 )
@@ -83,9 +84,7 @@ func ScanAppContents(apps []CFApp) *ScannerOutput {
 	cfConfig, _ := configv3.GetCFConfig()
 	commandUI, _ := ui.NewUI(cfConfig)
 	ccClient, uaaClient, routingClient, _ := shared.GetNewClientsAndConnectToCF(cfConfig, commandUI, "")
-
 	actor := v7action.NewActor(ccClient, cfConfig, nil, uaaClient, routingClient, clock.NewClock())
-	//actor := NewTestActor(ccClient, uaaClient, routingClient)
 
 	// create the object we want to return
 	scannerOutput := NewScannerOutput()
@@ -95,20 +94,20 @@ func ScanAppContents(apps []CFApp) *ScannerOutput {
 
 		if app.Buildpack == "java" {
 			dropletBytes, _, _, _ := actor.DownloadCurrentDropletByAppName(app.Name, app.SpaceGUID)
-			javaRuntimeVersion, bootVersion := findJavaRuntimeAndBootVersions(dropletBytes)
-			javaCompilerVersion := findJavaCompilerVersion(dropletBytes)
+			runtimeInfo := scan.FindRuntimeInfoFromContent(dropletBytes)
+			_, javaCompilerVersion := scan.FindJavaCompilerVersionFromContent(dropletBytes, runtimeInfo.BootContentPrefix)
 
 			// print app info
-			scannerOutput.AddJavaApp(app.Org, app.Space, app.Name, app.Instances, app.State, javaRuntimeVersion, javaCompilerVersion, bootVersion)
+			scannerOutput.AddJavaApp(app.Org, app.Space, app.Name, app.Instances, app.State, runtimeInfo.JavaRuntimeVersion, javaCompilerVersion, runtimeInfo.BootVersion)
 			log.Printf(
 				"*** App: Org=%s, Space=%s, Name=%s, BuildPack=%s, SpringBoot=%s, JavaCompiler=%s, JavaRuntime=%s",
 				app.Org,
 				app.Space,
 				app.Name,
 				app.Buildpack,
-				bootVersion,
+				runtimeInfo.BootVersion,
 				javaCompilerVersion,
-				javaRuntimeVersion,
+				runtimeInfo.JavaRuntimeVersion,
 			)
 		} else {
 			// print app info

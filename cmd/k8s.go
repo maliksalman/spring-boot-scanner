@@ -5,7 +5,6 @@ import (
 	"github.com/maliksalman/spring-boot-scanner/k8s"
 	"github.com/spf13/cobra"
 	"os"
-	"strings"
 )
 
 type K8sAppInfo struct {
@@ -32,10 +31,6 @@ func NewCmdK8s() *cobra.Command {
 			infos := make([]K8sAppInfo, 0)
 			for _, app := range apps {
 				for container, image := range app.Images {
-
-					if !strings.HasPrefix(image, "maliksalman/") {
-						continue
-					}
 
 					extractedDir, err := k8s.DownloadImageAsOciDir(cmd.Context(), image)
 					if err != nil {

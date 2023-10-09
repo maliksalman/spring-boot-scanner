@@ -9,7 +9,7 @@ import (
 
 func TestExtractBootJar_Found(t *testing.T) {
 
-	tgzFile, err := os.Open(filepath.Join("test", "image-layer-boot-jar.tgz"))
+	tgzFile, err := os.Open(filepath.Join("testdata", "image-layer-boot-jar.tgz"))
 	assert.NoError(t, err)
 
 	found, extractedContentFileName, err := extractBootJarFromImageLayer(tgzFile, "/workspace/app.jar")
@@ -17,7 +17,7 @@ func TestExtractBootJar_Found(t *testing.T) {
 
 	assert.True(t, found)
 
-	expectedFileContent, err := os.ReadFile(filepath.Join("test", "app.jar"))
+	expectedFileContent, err := os.ReadFile(filepath.Join("testdata", "app.jar"))
 	assert.NoError(t, err)
 
 	extractedFileContent, err := os.ReadFile(extractedContentFileName)
@@ -28,7 +28,7 @@ func TestExtractBootJar_Found(t *testing.T) {
 
 func TestExtractBootJar_NotFound(t *testing.T) {
 
-	tgzFile, err := os.Open(filepath.Join("test", "image-layer-boot-jar.tgz"))
+	tgzFile, err := os.Open(filepath.Join("testdata", "image-layer-boot-jar.tgz"))
 	assert.NoError(t, err)
 
 	found, _, err := extractBootJarFromImageLayer(tgzFile, "/doesnt-exist.jar")

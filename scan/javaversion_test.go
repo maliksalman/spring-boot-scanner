@@ -22,7 +22,7 @@ func TestGetClassFileVersion_Java17(t *testing.T) {
 func testGetClassFileVersion(t *testing.T, expectedVer string) {
 
 	// GIVEN
-	classFile, err := os.Open(filepath.Join("test", "HelloWorld."+expectedVer+".class"))
+	classFile, err := os.Open(filepath.Join("testdata", "HelloWorld."+expectedVer+".class"))
 	assert.NoError(t, err)
 
 	// WHEN
@@ -35,7 +35,7 @@ func testGetClassFileVersion(t *testing.T, expectedVer string) {
 
 func TestFindJavaCompilerVersionFromBootJar(t *testing.T) {
 
-	ver, err := FindJavaCompilerVersionFromBootJar(filepath.Join("test", "app.jar"), "BOOT-INF")
+	ver, err := FindJavaCompilerVersionFromBootJar(filepath.Join("testdata", "app.jar"), "BOOT-INF")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "11", ver)
@@ -43,7 +43,7 @@ func TestFindJavaCompilerVersionFromBootJar(t *testing.T) {
 
 func testFindJavaCompilerVersionFromReader(t *testing.T, tgzFileName string, bootContentPrefix string) {
 
-	tgzFile, err := os.Open(filepath.Join("test", tgzFileName))
+	tgzFile, err := os.Open(filepath.Join("testdata", tgzFileName))
 	assert.NoError(t, err)
 
 	found, ver := FindJavaCompilerVersionFromReader(tgzFile, bootContentPrefix)

@@ -1,11 +1,5 @@
 #!/bin/bash
 
-echo "Downloading dependencies ..."
-go mod download
-
-echo "Running unit tests ..."
-go test ./...
-
 for GOOS in linux darwin windows; do
   for GOARCH in arm64 amd64; do
     EXT=""

@@ -13,6 +13,9 @@ jobs:
       - id: download-dependencies
         run: |
           go mod download
+      - id: run-unit-tests
+        run: |
+          go test ./...
       - id: build
         run: |
           ./build.sh

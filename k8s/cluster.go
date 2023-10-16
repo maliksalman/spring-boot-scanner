@@ -2,7 +2,9 @@ package k8s
 
 import (
 	"context"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	appsV1 "k8s.io/api/apps/v1"
+	coreV1 "k8s.io/api/core/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -10,14 +12,20 @@ import (
 	"path/filepath"
 )
 
-type K8sApp struct {
-	Name      string
-	Namespace string
-	Images    map[string]string
-	Labels    map[string]string
+type ClusterClientSet struct {
+	clientSet *kubernetes.Clientset
 }
 
-func getClientSet() (*kubernetes.Clientset, error) {
+func NewClusterClientSet() (*ClusterClientSet, error) {
+	cs, err := createClientSet()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ClusterClientSet{cs}, nil
+}
+
+func createClientSet() (*kubernetes.Clientset, error) {
 
 	var kubeConfig string
 	if envVar := os.Getenv("KUBECONFIG"); envVar != "" {
@@ -34,38 +42,22 @@ func getClientSet() (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(config)
 }
 
-func FindApps(ctx context.Context) ([]K8sApp, error) {
+func (ccs *ClusterClientSet) GetSecret(ctx context.Context, namespace string, name string) (*coreV1.Secret, error) {
+	return ccs.clientSet.CoreV1().
+		Secrets(namespace).Get(ctx, name, metaV1.GetOptions{})
+}
 
-	clientSet, err := getClientSet()
-	if err != nil {
-		return nil, err
-	}
+func (ccs *ClusterClientSet) ListDeployments(ctx context.Context, ns string, opts metaV1.ListOptions) (*appsV1.DeploymentList, error) {
+	return ccs.clientSet.AppsV1().
+		Deployments(ns).List(ctx, opts)
+}
 
-	apps := make([]K8sApp, 0)
-	namespaceList, err := clientSet.CoreV1().
-		Namespaces().
-		List(ctx, v1.ListOptions{Limit: 1000})
-	if err != nil {
-		return nil, err
-	}
-	for _, ns := range namespaceList.Items {
-		deploymentsList, err := clientSet.AppsV1().
-			Deployments(ns.Name).List(ctx, v1.ListOptions{Limit: 1000})
-		if err != nil {
-			return nil, err
-		}
-		for _, app := range deploymentsList.Items {
-			images := make(map[string]string)
-			for _, cont := range app.Spec.Template.Spec.Containers {
-				images[cont.Name] = cont.Image
-			}
-			apps = append(apps, K8sApp{
-				Name:      app.Name,
-				Namespace: app.Namespace,
-				Labels:    app.Labels,
-				Images:    images,
-			})
-		}
-	}
-	return apps, nil
+func (ccs *ClusterClientSet) ListNamespaces(ctx context.Context, opts metaV1.ListOptions) (*coreV1.NamespaceList, error) {
+	return ccs.clientSet.CoreV1().
+		Namespaces().List(ctx, opts)
+}
+
+func (ccs *ClusterClientSet) GetServiceAccount(ctx context.Context, namespace string, accountName string) (*coreV1.ServiceAccount, error) {
+	return ccs.clientSet.CoreV1().
+		ServiceAccounts(namespace).Get(ctx, accountName, metaV1.GetOptions{})
 }

@@ -23,16 +23,25 @@ func NewCmdK8s() *cobra.Command {
 		Short: "Scans a Kubernetes cluster",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			apps, err := k8s.FindApps(cmd.Context())
+
+			clientSet, err := k8s.NewClusterClientSet()
 			if err != nil {
 				return err
 			}
+
+			apps, err := k8s.FindApps(cmd.Context(), clientSet)
+			if err != nil {
+				return err
+			}
+
+			secretsData := k8s.BuildPullSecretsCache(cmd.Context(), apps, clientSet)
+			imageDownloader := k8s.NewOciImageDownloader(cmd.Context(), secretsData)
 
 			infos := make([]K8sAppInfo, 0)
 			for _, app := range apps {
 				for container, image := range app.Images {
 
-					extractedDir, err := k8s.DownloadImageAsOciDir(cmd.Context(), image)
+					extractedDir, err := imageDownloader.DownloadAsDir(app.Namespace, app.Name, image)
 					if err != nil {
 						return err
 					}
@@ -49,6 +58,7 @@ func NewCmdK8s() *cobra.Command {
 						Info:         info,
 						IsSpringBoot: isSpringBoot,
 					})
+					imageDownloader.DeleteDir(image, extractedDir)
 				}
 			}
 

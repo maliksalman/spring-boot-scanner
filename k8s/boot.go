@@ -65,7 +65,7 @@ func FindJavaInfoFromExtractedImage(extractedImagePath string) (bool, *JavaInfo,
 			log.Printf("Looking for boot-jar: Jar=%s, LayerSha256=%s", runtimeInfo.BootJar, layerDigest.Hex)
 
 			// find the boot-jar from the layer
-			jarFileFound, jarFileName, err := extractBootJarFromImageLayer(layerTarGzFile, runtimeInfo.BootJar)
+			jarFileFound, jarFileName, err := ExtractBootJarFromImageLayer(layerTarGzFile, runtimeInfo.BootJar)
 			if err != nil {
 				return false, nil, err
 			}
@@ -76,6 +76,7 @@ func FindJavaInfoFromExtractedImage(extractedImagePath string) (bool, *JavaInfo,
 				if err != nil {
 					return false, nil, err
 				}
+				deleteBootJar(jarFileName)
 
 				return true, &JavaInfo{
 					CompilerVersion:   compilerVersion,
@@ -114,7 +115,7 @@ func getOciLayersFromExtractedImage(extractedImagePath string) ([]v1.Layer, erro
 	return image.Layers()
 }
 
-func extractBootJarFromImageLayer(tarGzippedReader io.Reader, bootJarName string) (bool, string, error) {
+func ExtractBootJarFromImageLayer(tarGzippedReader io.Reader, bootJarName string) (bool, string, error) {
 
 	gzipReader, _ := gzip.NewReader(tarGzippedReader)
 	defer gzipReader.Close()
@@ -144,4 +145,8 @@ func extractBootJarFromImageLayer(tarGzippedReader io.Reader, bootJarName string
 	}
 
 	return false, "", nil
+}
+
+func deleteBootJar(bootJarPath string) error {
+	return os.Remove(bootJarPath)
 }
